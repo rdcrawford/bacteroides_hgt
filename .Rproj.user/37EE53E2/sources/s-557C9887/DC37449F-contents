@@ -1,0 +1,106 @@
+# ------------------------------------------------------------------------------
+# Create core genome tree
+# 2019/12/06
+# Ryan D. Crawford
+# ------------------------------------------------------------------------------
+
+# ---- Load libraries ----------------------------------------------------------
+
+library( cdHitWrapper )
+library( Rcpp )
+library( RcppParallel )
+library( maps )
+library( ape )
+library( phytools )
+library( future )
+library( future.apply )
+
+# ---- Variable initializations ------------------------------------------------
+
+load("data/genome_data.Rdata")
+rData = "data/2019_12_06_core_gene_tree.Rdata"
+
+runId = "bacterioides_hgt_analysis"
+
+outDir = "analysis/2019_12_06_core_gene_tree/"
+if (!file.exists(outDir)) system( paste( "mkdir", outDir ) )
+
+# ---- Source Functions --------------------------------------------------------
+
+cgTree = system(
+  paste0("ls ../hgt_project/lib/coreGeneTree/*/*.*"), intern = TRUE
+  )
+
+for ( x in cgTree ) 
+{
+  if ( grepl("cpp$", x) ) sourceCpp( x )
+  else source( x )
+}
+
+source( "lib/R/GetClustList.R")
+
+# ---- Create the tree ---------------------------------------------------------
+
+treeData = CreateCoreGeneTree( 
+  gffFiles,             # Gff3 files for the input genomes
+  fastaFiles,           # Fasta files for the input genomes
+  outDir,               # Directory to write the output files
+  runId,                # Run ID to append to output files
+  maxMissGenes = 0.01,  # Maximium fraction of missing genes
+  coreGeneFrac = 0.99,  # Fraction of genomes with gene to quality as core
+  threadVal    = 8,     # Number of threads availible for mafft
+  distMat      = TRUE,  # Create a distance matrix
+  njTree       = TRUE,  # Create a neighbor joining tree 
+  revTranslate = FALSE, # Dont convert the aa algiment to dna
+  fastTree     = TRUE   # Run fastTree
+  )
+
+# ------------------------------------------------------------------------------
+
+PlotCgTree( tree )
+
+GetSpeciesLabels = function( genomeNames )
+{
+  species = sapply( genomeNames, function(x) 
+  {
+    if ( grepl("xylanisolvens", x) ) return( "B. xylanisolvens" )
+    if ( grepl("ovatus", x) ) return( "B. ovatus" )
+    return( "ND" )
+  })
+  return( species )
+}
+
+speciesNames = GetSpeciesLabels( names(gffFiles) )
+
+
+
+tree = treeData$tree
+
+( 492397 - max( treeData$distMat ) ) / 492397
+
+pheatmap::pheatmap( treeData$distMat )
+
+# ------------------------------------------------------------------------------
+load(rData)
+tree = read.tree( treeData$treeFile )
+
+PlotCgTree( tree )
+
+text(22.2, 36.5, "Core genome tree")
+# load(rData)
+# 
+# distMat =  
+genomeNames = names( ParseFasta( treeData$concatGeneAaFa ) )
+
+colnames( treeData$distMat ) = genomeNames
+row.names( treeData$distMat ) = genomeNames
+
+speciesClusts = GetClustList( treeData$distMat , 2 )
+
+speciesNames = sapply( )
+
+# ---- Save the data -----------------------------------------------------------
+
+save(file = rData, list = ls())
+
+# ------------------------------------------------------------------------------

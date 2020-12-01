@@ -1,0 +1,212 @@
+# ------------------------------------------------------------------------------
+# 
+# 2020/08/13
+# Ryan D. Crawford
+# ------------------------------------------------------------------------------
+
+# For each of the gene Ids 
+LookUpCoreGeneClusts = function( geneIds )
+{
+  isMyGene = sapply( geneIds, function(x) which( coreGeneData[ , 1] == x) )
+  return( coreGeneData[ isMyGene, 2 ] )
+}
+
+# For a given genome and cluster look up the the gene id corresponding to 
+# the cluster index in the input genome.
+GetCoreGeneId = function( genomeId, clIdx )
+{
+  isMyGenome = coreGeneData[ , 2 ] == genomeId
+  rIdx = which( coreGeneData[ isMyGenome, 3 ] == clIdx )
+  return( coreGeneData[ isMyGenome, 1 ][ rIdx ] )
+}
+
+# Create a logical vector with the core genes where there is evidence of HGT
+FindHgtInBx = function( rDistVals, qDistVals )
+{
+  isHgt = sapply( 1:length( rDistVals ), 
+    function(i) rDistVals[i] > HGT_THRESH && qDistVals <= HGT_THRESH
+    )
+  return( isHgt )
+}
+
+# Identify if the genes indicated by the integers in the "gffRowIdxs"
+# are within the required gene distance. Logical vector is returned
+GetGeneDists = function( gffRowIdxs, gff )
+{
+  # For each gene, find if the previous gene is within the distance threshold
+  isSameLocus = sapply( 2:length( gffRowIdxs ), function(i) 
+  {
+    endPos   = gff[ gffRowIdxs[ i - 1 ], G_END ]
+    startPos = gff[ gffRowIdxs[ i ], G_START ]
+    return( startPos - endPos < MAX_GENE_DIST )
+  })
+}
+
+# Add a collumn to the gff file with the cluster id
+AddClIdxsToGff = function( gff, genomeId )
+{
+  isMyGenome = geneData[ , 5 ] == genomeId
+  genomeData = geneData[ isMyGenome, ]
+  
+  clustIdxs = sapply( gff$annotId, function(x)
+  {
+    rIdx = which( genomeData[ , 1] == x )
+    return( genomeData[ rIdx, 2 ] )
+  })
+  
+  return( cbind.data.frame( gff, clustIdxs, stringsAsFactors = FALSE ) )
+}
+
+GetWholeGenomeClust = function()
+{
+  uniqueClust = geneData[ !duplicated( geneData[ , 2 ]),  1 ]
+  cgClusts    = coreGeneData[ !duplicated( coreGeneData[ , 3 ] ), 1 ]
+  return( sapply( cgClusts, function(x) which( uniqueClust == x ) ) )
+}
+
+FindHgtLoci = function( genomeId )
+{
+  #
+  isBx = genomeId %in% speciesClusts[[ 1 ]]
+  
+  #
+  gIdx = GetGenomeIdx( genomeId )
+  
+  if ( isBx )
+  {
+    hgtClusts = which( FindHgtInBx( bxVals[ , gIdx ], boVals[ , gIdx ] ) )
+  } else {
+    hgtClusts = which( FindHgtInBx( boVals[ , gIdx ], bxVals[ , gIdx ] ) )
+  }
+  
+  hgtGeneIds = sapply( hgtClusts, 
+    function(x) GetCoreGeneId( genomeId, x )
+    )
+
+
+  gffRowIdxs = LookUpGffRows( genePtr$gfList[[ gIdx ]], hgtGeneIds )
+  gffRowIdxs = gffRowIdxs[ order(gffRowIdxs) ]
+}
+
+GetNextGene = function( inVal )
+{
+  return( inVal + 1 )
+}
+
+GetPrevGene = function( inVal )
+{
+  return( inVal - 1 )
+}
+
+FindSyntGenesAtLocus = function( gIdx, toTest, seedIdxs, isForSearch )
+{
+  if ( isForSearch )
+  {
+    GetGeneFn = GetNextGene
+  } else {
+    GetGeneFn = GetPrevGene
+  }
+  
+  numIts = sapply( toTest, function(i) 
+  {
+    its = 0
+    r   = seedIdxs[ gIdx ]
+    q   = seedIdxs[ i ]
+    while ( gfList[[ gIdx ]][ r, G_CLUST ] == gfList[[ i ]][ q, G_CLUST ] )
+    {
+      r   = GetGeneFn( r )
+      q   = GetGeneFn( q )
+      its = its + 1
+    }
+    return( its - 1 )
+  })
+  
+  if ( isForSearch ) return( seedIdxs + max( numIts ) )
+  return( seedIdxs - max( numIts ) )
+}
+
+# seedClust = coreGeneClIdxs[ bxHgtGenes[55] ]
+FindSyntenicHgtLoci = function( seedClust, gIdx, isMySpecies )
+{
+  # Find the position in the gff file corresponding to the hgt
+  # cd-hit cluster
+  seedIdxs = sapply( 1:length( gfList ),
+    function(i) which( gfList[[i]][ , 7 ] == seedClust )
+    )
+
+  toTest = which( !isMySpecies )
+  
+  # Find the farmost right and left gene where there is still a match
+  # in the opposite species
+  startPos = FindSyntGenesAtLocus( gIdx, toTest, seedIdxs, FALSE )
+  endPos   = FindSyntGenesAtLocus( gIdx, toTest, seedIdxs, TRUE )
+  
+  if ( identical( startPos, endPos ) ) return( NULL )
+  
+  locusGeneMat = sapply( seq( nGenomes ),
+    function(i) gfList[[i]][ startPos[i]:endPos[i], G_CLUST ]
+    )
+  locusGeneMat = t( locusGeneMat )
+  return( locusGeneMat)
+}
+
+
+MakeLocusGeneHeatmap = function( locusGeneMat )
+{
+  locusGenes = unique( as.vector( locusGeneMat ) )
+  numGenes   = length( locusGenes )
+  geneCols   = rainbow( numGenes )[ sample.int( numGenes ) ]
+  
+  locusGeneMat = sapply( 1:ncol(locusGeneMat), 
+    function(j) sapply( 1:nrow(locusGeneMat), 
+      function(i) which( locusGenes == locusGeneMat[ i , j ] )
+      )
+    )
+  row.names( locusGeneMat ) = genomeNames
+  
+  numRefMatches = sapply( 1:nrow( locusGeneMat ),
+    function(i) sum( locusGeneMat[i, ] %in% locusGeneMat[ gIdx, ] )
+    )
+  
+  locusGeneMat = locusGeneMat[ order( numRefMatches, decreasing = TRUE ), ]
+
+  pheatmap::pheatmap(
+    locusGeneMat,
+    annotation_row    = rowAnnots,
+    annotation_colors = colList,
+    color             = geneCols,
+    show_rownames     = FALSE,
+    cluster_cols      = FALSE,
+    cluster_rows      = FALSE
+    )
+}
+
+
+IdentifyHgtLocusComposition = function( hgtClusts , hgtRefGenomes, isMySpecies )
+{
+  locusGeneList = sapply( 1:length( hgtClusts ), function(i)
+  {
+    cat(i, '\n' )
+    return( list( FindSyntenicHgtLoci(  hgtClusts[i], hgtRefGenomes[i] ) ) )
+  })
+  return( locusGeneList )
+}
+
+FindRefGenomeIdxs = function( hgtGeneIdxs, isMyGenome, distValMat )
+{
+  genomeIdxs = which( isMyGenome ) 
+  gIdxs = sapply( hgtGeneIdxs, 
+    function(i) genomeIdxs[ which.min( distValMat[ i, isMyGenome ] ) ]
+    )
+  return( gIdxs ) 
+}
+
+# ------------------------------------------------------------------------------
+# boIdxs = which( !isBx )
+# locusGeneList = sapply( 1:length( boHgtGenes ), function(i)
+# {
+#   cat(i, '\n' )
+#   gIdx = boIdxs[ which.min( bxVals[ boHgtGenes[i], !isBx ] ) ]
+#   hgtClust = coreGeneClIdxs[ boHgtGenes[i] ]
+#   return( list( FindSyntenicHgtLoci( hgtClust, gIdx ) ) )
+# })

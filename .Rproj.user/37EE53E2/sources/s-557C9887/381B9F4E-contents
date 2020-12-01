@@ -1,0 +1,175 @@
+# ------------------------------------------------------------------------------
+# Find Accessory Genes At HGT Loci 
+# 2020/08/19
+# Ryan D. Crawford
+# ------------------------------------------------------------------------------
+
+# ---- Load libraries ----------------------------------------------------------
+
+library( Rcpp )
+library( cognac )
+library( ape )
+library( maps )
+library( phytools )
+library( RColorBrewer )
+
+# ---- Constant declarations ---------------------------------------------------
+
+G_ANNOT       = 2
+G_START       = 4
+G_END         = 5
+G_CLUST       = 7
+MAX_GENE_DIST = 5000
+GENOME_NAME   = 1
+CLUST_IDX     = 2
+HGT_GENES     = 3
+CG_DISTS      = 4
+ACC_GENES     = 5
+ACC_GENE_PRS  = 6
+HGT_ACC_GENES = 7
+GENE_ANNOTS   = 8
+
+# ---- Load in the data on the genomes and gene distaces -----------------------
+
+load( "data/2020_08_13_get_cd_hit_clust_data.Rdata" )
+
+# ---- Source functions --------------------------------------------------------
+
+# Functions for discovery of loci that 1) have evidence of HGT with respect to 
+# core genome variation and 2) are perfectly syntenic are co-linear between
+# at least on pair of genomes of the opposite species
+source( "lib/R/Desktop/FindAccGenesAtHgtLoci.R" )
+
+# Functions for making heatmaps displaying core genome variation, highlighing
+# HGT accessory genes, and presence of other accessory genes at HGT loci
+# via the pheatmap package.
+source( "lib/R/Desktop/MakeHgtHeatmap.R" )
+
+# ---- Find HGT events ---------------------------------------------------------
+
+# Find use the median distances determine HGT core genes. Next, find all loci 
+# containing hgt genes which are perfectly syntenic and colinear, potentially
+# arising because of HGT between B. xylanisolvens and B. ovatus.
+bxHgtEventData = FindAccGenesAtHgtLoci( bxVals, boVals, isBx, c("Bx", "Bo") )
+
+# Repeat the same analysis to identify HGT loci in B. ovatus from 
+# B. xylanisolvens
+boHgtEventData = FindAccGenesAtHgtLoci( boVals, bxVals, !isBx, c("Bo", "Bx") )
+
+cat( "Number of Bo hgt events:", length( boHgtEventData ), '\n' )
+cat( "Number of Bx hgt events:", length( bxHgtEventData ), '\n' )
+
+# ---- Set up the plotting functions -------------------------------------------
+
+# Get all of the values for the distance metrics used for the 
+# HGT project. 
+distVals  = GetDistVals( c( bxHgtEventData, boHgtEventData) )
+
+# Set integers to to symbolize whether assessorty 
+PRESENT   = 1 + length( distVals )
+ABSENT    = 2 + length( distVals )
+HGT_GENE  = 3 + length( distVals )
+
+hmCols = GetHmCols()
+
+rowAnnots = data.frame( sapply( 1:length( isBx ), function(i)
+{
+  if ( isBx[i] ) return( "Bx" )
+  return( "Bo" )
+}))
+colnames( rowAnnots ) = "species"
+row.names( rowAnnots ) = genomeNames
+colList = list( "species" = c( "Bx" = "red4", "Bo" = "navyblue") )
+
+par( mfrow = c( 1, 1 ) )
+PlotLegend()
+
+# ---- Find the number of HGT accessory genes ----------------------------------
+
+numBxHgt = GetNumHgtGenes( bxHgtEventData )
+sum( numBxHgt )
+numBoHgt = GetNumHgtGenes( boHgtEventData )
+sum( numBoHgt )
+
+bxHgtEventData = bxHgtEventData[ numBxHgt > 0 ]
+boHgtEventData = boHgtEventData[ numBoHgt > 0 ]
+
+
+cat( "Number of Bo hgt events w/ pg exp:", length( boHgtEventData ), '\n' )
+cat( "Number of Bx hgt events w/ pg exp:", length( bxHgtEventData ), '\n' )
+
+# ---- Plot the HGT results ----------------------------------------------------
+
+# Get the number of genes at each HGT event
+nBxGenes = CountGenes( bxHgtEventData )
+nBoGenes = CountGenes( boHgtEventData )
+maxVal   = ceiling( max( c( nBxGenes, nBoGenes ) ) / 5 ) * 5
+
+# Get the numbers of hgt accessory genes
+nBxHgtGenes = CountHgtGenes( bxHgtEventData )
+nBoHgtGenes = CountHgtGenes( boHgtEventData )
+maxHgtVal   = ceiling( max( c( nBxHgtGenes, nBoHgtGenes ) ) / 5 ) * 5
+
+# Make a 4 panel barplot with the total number of genes per locus
+# and the number of HGT accessory genes per locus
+png( 
+  file   = "results/2020_11_20_distribution_of_pg_gene_counts.png",
+  height = 800,
+  width  = 1000
+  )
+par( mfrow = c( 2, 2 ), mar = c( 4.1, 4.1, 2.2, 0.5 ) )
+barplot(
+  nBxGenes[ order( nBxGenes ) ], 
+  col    = "Red4",
+  border = "Red4",
+  ylim   = c( 0, maxVal ),
+  ylab   = "Number of genes"
+  )
+barplot(
+  nBoGenes[ order( nBoGenes ) ], 
+  col    = "darkblue",
+  border = "darkblue",
+  ylim   = c( 0, maxVal )
+  )
+mtext( "Counts of the total number of HGT genes\n", adj = 1.3 )
+barplot(
+  nBxHgtGenes[ order( nBxGenes ) ], 
+  col    = "Red4",
+  border = "Red4",
+  ylim   = c( 0, 16 ),
+  xlab   = "B. xylanisolvens HGT events",
+  ylab   = "Number of genes"
+  )
+barplot(
+  nBoHgtGenes[ order( nBoGenes ) ], 
+  col    = "darkblue",
+  border = "darkblue",
+  main   = "",
+  ylim   = c( 0, 16 ),
+  xlab   = "B. ovatus HGT events"
+  )
+mtext( "Counts of HGT acessory genes\n", adj = 2.2 )
+dev.off()
+
+# ---- Make HGT locus heatmaps -------------------------------------------------
+
+outDir = "results/hgt_event_heatmaps/"
+for ( i in 1:length( bxHgtEventData ) )
+{
+  figTitle = paste( "B. xylanisolvens HGT", i )
+  fileName = paste0( outDir, gsub( ' ', '_', figTitle), ".png" )
+  MakeHgtEventHeatmap( bxHgtEventData[i], figTitle, TRUE, TRUE, fileName )
+}
+
+for ( i in 1:length( boHgtEventData ) )
+{
+  figTitle = paste( "B. ovatus HGT Event", i )
+  fileName = paste0( outDir, gsub( ' ', '_', figTitle), ".png" )
+  MakeHgtEventHeatmap( boHgtEventData[i], figTitle, TRUE, TRUE, fileName )
+}
+
+# ---- Save the data -----------------------------------------------------------
+
+save( file = "data/2020_08_13_find_hgt_accessory_genes.Rdata", list = ls() )
+
+# ------------------------------------------------------------------------------

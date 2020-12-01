@@ -1,0 +1,92 @@
+# ------------------------------------------------------------------------------
+# 
+# 2020/07/27
+# Ryan D. Crawford
+# ------------------------------------------------------------------------------
+
+# ---- Load libraries ----------------------------------------------------------
+
+library( Rcpp )
+library( cognac )
+library( ape )
+
+# ---- Constant Declarations ---------------------------------------------------
+
+
+
+# ---- Variable initializations ------------------------------------------------
+
+rData = "data/2020_07_27_analyze_gene_algns.Rdata"
+# load( rData )
+
+# ---- Source Functions --------------------------------------------------------
+
+GetAlgnPaths = function()
+{
+  load( "data/2020_02_14_GenerateGeneAlgns.Rdata" )
+  numAlgns = length( algnList )
+  algnPaths = sapply( seq( numAlgns ), 
+    function(i) paste0("data/temp/algn_", i, ".fasta") 
+    )
+  for ( i in seq( numAlgns ) ) 
+    WriteAlgn( algnList[[i]], algnPaths[i] )
+  
+  return( algnPaths )
+}
+
+WriteAlgn = function( algn, algnPath )
+{
+  sink( algnPath )
+  for ( j in 1:length( algn ) )
+    cat( '>', names( algn )[ j ], '\n', algn[ j ], '\n', sep = '' )
+  sink()
+}
+
+RunFastTree = function( algnPath )
+{
+  treePath = gsub( "fasta", "tre", algnPath )
+  fastTreeCmd = paste( "fasttree <", algnPath, ">", treePath )
+  system( fastTreeCmd )
+  return( treePath )
+}
+
+# ------------------------------------------------------------------------------
+
+# Get the paths to the mafft alignments
+algnPaths = GetAlgnPaths( )
+
+# Greate the ml trees with fasttree
+geneTreePaths = sapply( algnPaths, RunFastTree )
+save( file = rData, list = ls() )
+
+# Read the trees into R
+geneTrees = sapply( geneTreePaths, function(x) list( read.tree( x ) ) )
+
+# Get the co-phylogenetic distances
+phyloMats = sapply( 1:length(geneTrees), 
+  function(i) list( cophenetic.phylo( geneTrees[[i]] ) ) 
+  )
+
+# Sort the matricies
+for ( i in 1:length(phyloMats) )
+{
+  matOrder = order( row.names( phyloMats[[i]] ) )
+  if ( !identical( row.names( phyloMats[[i]] ), colnames( phyloMats[[i]] ) ) )
+    stop( i )
+  phyloMats[[i]] = phyloMats[[i]][ matOrder, matOrder ]
+}
+
+# # Find the position of the reference
+rIdxs = sapply( 1:length( phyloMats ),
+  function(i) grep( "XB1A", row.names( phyloMats[[i]] ) )
+  )
+
+# Create a matrix with the differences to the reference genome 
+diffMat = sapply( 1:length( rIdxs ), function(i) phyloMats[[i]][ rIdxs[i], ] )
+
+
+# ------------------------------------------------------------------------------
+
+save( file = rData, list = ls() )
+
+# ------------------------------------------------------------------------------

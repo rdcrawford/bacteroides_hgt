@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1606767084019.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2013179555",
+    "id" : "F27EE563",
+    "lastKnownWriteTime" : 1606831539,
+    "last_content_update" : 1606831539821,
+    "path" : "~/gl/bacterioides_hgt/lib/2020_08_13_get_cd_hit_clust_data.R",
+    "project_path" : "lib/2020_08_13_get_cd_hit_clust_data.R",
+    "properties" : {
+        "cursorPosition" : "124,30",
+        "scrollLine" : "68",
+        "source_window_id" : "wep6qiiprjshh"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,11 @@
+#PBS -N Prokka_Bact
+#PBS -M apirani@med.umich.edu
+#PBS -m abe
+#PBS -V
+#PBS -l nodes=1:ppn=8,pmem=4000mb,walltime=72:00:00
+#PBS -q fluxod
+#PBS -A esnitkin_fluxod
+#PBS -l qos=flux
+
+cd /scratch/esnitkin_fluxod/apirani/Project_Bacteroides/2017_10_26_HGT_Mummer_analysis/fasta/
+/nfs/esnitkin/bin_group/anaconda2/bin/python /nfs/esnitkin/bin_group/scripts/run_commands_parallel.py -command commands.txt

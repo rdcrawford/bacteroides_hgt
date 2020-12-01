@@ -1,0 +1,65 @@
+---
+title: "Bacteroides HGT Project"
+author: "Ryan D. Crawford"
+date: "2020/11/25"
+output: pdf_document
+---
+
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/legend.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_1.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_2.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_3.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_4.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_6.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_7.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_8.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_9.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_10.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_10.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_11.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_12.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._ovatus_HGT_Event_13.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_1.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_2.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_3.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_4.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_5.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_6.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_7.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_8.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_9.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_11.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_12.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_13.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_14.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_15.png )
+
+![]( /home/ryan/Desktop/hgt_event_heatmaps/B._xylanisolvens_HGT_16.png )

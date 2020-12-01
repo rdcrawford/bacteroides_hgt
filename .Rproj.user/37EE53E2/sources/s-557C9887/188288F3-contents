@@ -1,0 +1,40 @@
+# ------------------------------------------------------------------------------
+# 
+# 2020/07/27
+# Ryan D. Crawford
+# ------------------------------------------------------------------------------
+
+
+WriteRmd = function( title, figPath, rmdPath )
+{
+
+  header = paste0(
+    "---\n",
+    "title: \"", title, "\"\n",
+    "author: \"Ryan D. Crawford\"\n",
+    "date: \"", format( Sys.Date(), "%Y/%m/%d"), "\"\n",
+    "output: pdf_document\n",
+    "---\n"
+    )
+  paths = system( paste0( "ls ", figPath, "*" ), intern = TRUE )
+  
+  sink( rmdPath )
+  cat( header )
+  cat( "\n\n\n")
+  for ( x in paths ) cat( "![](", x, ")\n\n" )
+  sink( )
+}
+
+# ------------------------------------------------------------------------------
+
+title   = "Bacteroides HGT Project"
+figPath = "/home/ryan/Desktop/hgt_event_heatmaps/"
+rmdPath = "lib/2020_11_25_hgt_loci_heatmaps.rmd"
+
+
+WriteRmd( title, figPath, rmdPath )
+
+# ------------------------------------------------------------------------------
+
+for ( i in 1:length( boHgtEventData[[5]][[8]] ) ) 
+  cat( i, ". ", boHgtEventData[[5]][[8]][i], '\n', sep = '' )

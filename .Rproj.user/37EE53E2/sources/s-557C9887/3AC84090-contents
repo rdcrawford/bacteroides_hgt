@@ -1,0 +1,51 @@
+# ------------------------------------------------------------------------------
+# 
+# 2020/08/13
+# Ryan D. Crawford
+# ------------------------------------------------------------------------------
+
+CalcMedianDists = function( distMat, isMySpecies )
+{
+  medianDistVals = sapply( 1:nrow(distMat), function( gIdx )
+  {
+    if ( isMySpecies[ gIdx ]  ) isMySpecies[ gIdx ] = FALSE
+    return( median( distMat[ gIdx, isMySpecies ] ) )
+  })
+  return( medianDistVals )
+}
+
+# ------------------------------------------------------------------------------
+
+load( "data/2020_07_27_analyze_gene_algns.Rdata" )
+
+xb1aDists = t(sapply( 1:length( phyloMats ),
+  function(i) phyloMats[[ i ]][ , 16 ]
+  ))
+
+genomeNames = rownames( phyloMats[[1]] )
+nGenomes = nrow( phyloMats[[1]] )
+
+# Calculate the median distance from each species to every other 
+# species
+isBx = genomeNames %in% speciesClusts[[1]]
+bxVals = t( sapply( 1:length( phyloMats ),
+  function(i) CalcMedianDists( phyloMats[[i]], isBx )
+  ))
+boVals = t(sapply( 1:length( phyloMats ),
+  function(i) CalcMedianDists( phyloMats[[i]], !isBx )
+  ))
+
+# ------------------------------------------------------------------------------
+
+rowAnnots = data.frame( sapply( genomeNames, function(x)
+{
+  if ( x %in% speciesClusts[[1]] ) return( "Bx")
+  return( "Bo" )
+}))
+colnames( rowAnnots ) = "species"
+colList = list( "species" = c( "Bx" = "red4", "Bo" = "navyblue") )
+
+i = FindSyntenicHgtLoci( clustIdxs, j, isMySpecies )[[3]]
+pheatmap::pheatmap(geneMat[i,], cluster_rows = FALSE, cluster_cols = FALSE )
+
+# ------------------------------------------------------------------------------

@@ -1,0 +1,239 @@
+# ------------------------------------------------------------------------------
+#
+# 2020/08/13
+# Ryan D. Crawford
+# ------------------------------------------------------------------------------
+
+CalcDistVal = function( rIdx, gIdx )
+{
+  rVal = bxVals[ rIdx, gIdx ] + 1
+  qVal = boVals[ rIdx, gIdx ] + 1
+  return( round( log( rVal / qVal ), 4 ) )
+}
+
+# ------------------------------------------------------------------------------
+
+GetDistVals = function( hgtEventData )
+{
+  #nGenomes = length( isBx )
+  genes = unique(unlist(sapply( 1:length(hgtEventData), 
+    function(i) list( hgtEventData[[i]][[ HGT_GENES ]] )
+    )))
+  geneIdxs = which( coreGeneClIdxs %in% genes )
+  
+  distMat = sapply( geneIdxs, function(x) 
+  {
+    return( sapply( seq( nGenomes ), function(j) CalcDistVal( x, j ) ) )
+  })
+  
+  distVals = unique( as.vector( distMat ) )
+  return( distVals[ order(distVals) ] )
+}
+
+# ------------------------------------------------------------------------------
+
+GetHmCols = function()
+{
+  # "darkorchid4"
+  midCol = colorRampPalette( c( "#14225A", "#ab0003" ) )( 3 )[ 2 ]
+  cgDistCols = c( 
+    colorRampPalette( c( "#ab0003", midCol ) )( sum( distVals < 0 ) ),
+    colorRampPalette( c( midCol, "#14225A" ) )( sum( distVals >= 0 ) )
+    )
+  return( c( cgDistCols, "lightsteelblue4", "grey75", "cyan" ) )
+}
+
+# ------------------------------------------------------------------------------
+
+
+PlotLegend = function()
+{
+  nCols      = 10
+  textSize   = 2.75
+  xValPoints = 0.1
+  xValText   = 0.15
+  sampleVals = floor( seq( from = 1, to = ( PRESENT - 1 ), length.out = nCols ) )
+  sampleCols = hmCols[ sampleVals ]
+  alleleVals = seq( from = 0, to = 0.5, length.out = nCols ) + 0.1
+  plot.new()
+  points(
+    rep( xValPoints, nCols ),
+    alleleVals, 
+    col = sampleCols,
+    pch = 15,
+    cex = textSize
+    )
+  text( 
+    xValText, 
+    alleleVals[1], 
+    "Allele more like B. xylanisolvens", 
+    # cex = textSize, 
+    pos = 4
+    )
+  text( 
+    xValText, 
+    alleleVals[ length(alleleVals) ],
+    "Allele more like B. ovatus",
+    # cex = textSize, 
+    pos = 4
+    )
+  
+  geneCats = c( "Absent", "Present", "HGT gene" )
+  colVals  = c( ABSENT, PRESENT, HGT_GENE )
+  for ( i in  1:length( geneCats ))
+  {
+    yVal = max( alleleVals ) + ( 0.1 * i )
+    points(
+      xValPoints,
+      yVal,
+      col = hmCols[ colVals[i] ],
+      pch = 15,
+      cex = textSize
+      )
+    
+    text(
+      xValText, 
+      0.6 + ( 0.1 * i ),
+      geneCats[ i ],
+      pos = 4
+      )
+  } 
+}
+
+rowAnnots = data.frame( sapply( isBx, function(x)
+{
+  if ( x ) return( "B. xylanisolvens" )
+  return( "B. ovatus" )
+}))
+
+colnames( rowAnnots ) = "species"
+row.names( rowAnnots ) = genomeNames
+
+colList = list( 
+  "species" = c( "B. xylanisolvens" = "red4",  "B. ovatus" = "navyblue" ) 
+  )
+
+
+
+# ------------------------------------------------------------------------------
+# geneName = 18254
+# gIdx = 33
+# geneName = 1956
+# gIdx     = 1
+GetGeneClassification = function( geneName, gIdx, hgtGenes )
+{
+  # Find if this gene is in this genome
+  isInGenome = geneName %in% gfList[[ gIdx ]][ , 7 ]
+  if ( !geneMat[ geneName, gIdx ] ) return( ABSENT )
+  
+  # If this is a HGT gene that is from Bo...
+  if ( geneName %in%  hgtGenes ) return( HGT_GENE )
+  
+  # Find if this is a core gene
+  isCoreGene = coreGeneClIdxs == geneName
+  if ( TRUE %in% isCoreGene )
+  {
+    rIdx      = which( isCoreGene )
+    geneDist  = CalcDistVal( rIdx, gIdx )
+    myDistVal = which( distVals == geneDist )
+    return( myDistVal )
+  }
+  return( PRESENT )
+}
+
+MakeHgtEventHeatmap = function( 
+  hgtEventData, hmTitle, showDimNames, getTranspose, fileName
+  )
+{
+  if ( missing( showDimNames ) ) showDimNames = FALSE
+  if ( missing( fileName ) )     fileName     = NA
+  if ( missing( getTranspose ) ) getTranspose = FALSE
+  
+  # Get the number of genes involved in each hgt event
+  hgtGeneList = sapply( 1:length(hgtEventData), 
+    function(i) list( hgtEventData[[i]][[ HGT_GENES ]] )
+    )
+  hgtGenes = unlist( sapply(1:length(hgtEventData), 
+    function(i) list( hgtEventData[[i]][[ HGT_ACC_GENES ]])
+    ))
+  genesPerEvent = sapply( hgtGeneList, length )
+  genes         = unlist( hgtGeneList )
+  nGenes        = sum( genesPerEvent )
+  genomes       = treeOrder #c( which( isBx ), which( !isBx ) )
+  
+  
+  hgtMat = sapply( genes, 
+    function(x) sapply( genomes, 
+      function(i) GetGeneClassification( x, i, hgtGenes ) 
+      )
+    )
+  
+  vals = unique( as.vector( hgtMat ) )
+  vals = vals[ order(vals) ]
+  hgtMat = sapply( 1:ncol(hgtMat), 
+    function(j) sapply( 1:nrow(hgtMat), 
+      function(i) which( vals == hgtMat[ i, j ] )
+      )
+    )
+  
+  isInData = sapply( seq( HGT_GENE ), function(x) x %in% vals )
+  
+  gaps = sapply( 1:( length( genesPerEvent ) - 1 ),
+    function(i) sum( genesPerEvent[1:i] )
+    )
+  
+  row.names( hgtMat ) = genomeNames[ treeOrder ]
+  if ( showDimNames )
+  {
+    geneAnnots = unlist(sapply(1:length(hgtEventData), 
+      function(i) list( hgtEventData[[i]][[ GENE_ANNOTS ]] )
+      ))
+    
+    colnames( hgtMat )  = geneAnnots
+  } 
+  
+  if ( missing(hmTitle)  ) hmTitle = NA
+  # hgtMat = RemoveHighDistGenes( 
+  #   hgtMat, genes, genomes, hgtEventData[[1]][[CLUST_IDX]] 
+  #   )
+  if ( getTranspose )
+  {
+    pheatmap::pheatmap(
+      t( hgtMat ),
+      color             = hmCols[ isInData ],
+      show_rownames     = showDimNames,
+      show_colnames     = showDimNames,
+      fontsize          = 7,
+      cluster_rows      = FALSE,
+      cluster_cols      = FALSE,
+      annotation_legend = TRUE,
+      legend            = FALSE,
+      gaps_col          = sum( isBx ),
+      gaps_row          = gaps,
+      main              = hmTitle,
+      annotation_col    = rowAnnots,
+      annotation_colors = colList,
+      filename          = fileName
+      )
+    } else {
+      pheatmap::pheatmap(
+        hgtMat,
+        color             = hmCols[ isInData ],
+        show_rownames     = showDimNames,
+        show_colnames     = showDimNames,
+        cluster_rows      = FALSE,
+        cluster_cols      = FALSE,
+        fontsize          = 7,
+        annotation_legend = TRUE,
+        legend            = FALSE,
+        gaps_col          = gaps,
+        gaps_row          = sum( isBx ),
+        main              = hmTitle,
+        annotation_row    = rowAnnots,
+        annotation_colors = colList,
+        filename          = fileName
+        )
+    }
+}
+
+# ------------------------------------------------------------------------------

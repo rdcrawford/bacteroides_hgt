@@ -1,0 +1,57 @@
+# ------------------------------------------------------------------------------
+#
+# 2020/08/13
+# Ryan D. Crawford
+# ------------------------------------------------------------------------------
+
+# ---- Load libraries ----------------------------------------------------------
+
+library( Rcpp )
+library( cognac )
+library( ape )
+library( maps )
+library( phytools )
+library( RColorBrewer )
+
+# ------------------------------------------------------------------------------
+
+G_ANNOT       = 2
+G_START       = 4
+G_END         = 5
+G_CLUST       = 7
+MAX_GENE_DIST = 5000
+GENOME_NAME   = 1
+CLUST_IDX     = 2
+HGT_GENES     = 3
+CG_DISTS      = 4
+ACC_GENES     = 5
+ACC_GENE_PRS  = 6
+HGT_ACC_GENES = 7
+GENE_ANNOTS   = 8
+
+# ------------------------------------------------------------------------------
+
+hgtEventData = c( boHgtEventData, bxHgtEventData )
+
+genes = GetGenes( hgtEventData )
+
+geneCounts = table( unlist( genes ) )
+
+geneCounts = geneCounts[ order( geneCounts, decreasing = TRUE ) ]
+length( geneCounts )
+sum( geneCounts > 1 )
+coreGenes = sapply( 1:length(hgtEventData), 
+  function(i) hgtEventData[[i]][[CLUST_IDX]] 
+  )
+
+isCg = names( geneCounts ) %in% coreGenes
+multiCgs = names( geneCounts[ isCg ] )[ geneCounts[ isCg ] > 1 ]
+
+isMultiCgEvent = sapply( 1:length(hgtEventData), 
+  function(i) TRUE %in% ( multiCgs %in% hgtEventData[[i]][[CLUST_IDX]] )
+  )
+
+for ( i in which( isMultiCgEvent ) )
+  MakeHgtEventHeatmap( hgtEventData[ i ], NA, TRUE, TRUE, NA )
+
+# ------------------------------------------------------------------------------
