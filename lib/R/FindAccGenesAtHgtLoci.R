@@ -3,16 +3,6 @@
 # 2020/08/19
 # Ryan D. Crawford
 # ------------------------------------------------------------------------------
-# hgtEventData = hgtEventData[x]\
-# refVals     = boVals
-# qryVals     = bxVals
-# isMySpecies = !isBx
-# specNames   = c("Bo", "Bx")
-# refVals     = bxVals
-# qryVals     = boVals
-# isMySpecies = isBx
-# specNames   = c( "Bx", "Bo" )
-# ------------------------------------------------------------------------------
 
 # Find genes exhibiting patterns of HGT in the data-set
 FindHgtGenes = function( refVals, qryVals, isMySpecies )
@@ -243,7 +233,8 @@ FindNestedHgtEvents = function( hgtEventData )
     )
   hgtEventData = hgtEventData[ order( numGenes, decreasing = TRUE ) ]
   
-  #
+  # Create a logical vector to indicate whether an hgt event is still
+  # in the analysis
   isClassified = vector( "logical", nEvents )
   
   # Initialize the reference and querry 
@@ -251,13 +242,13 @@ FindNestedHgtEvents = function( hgtEventData )
   qIdx = 2
   toKeep = rIdx
   isClassified[ rIdx ] = TRUE
-  # rIdx = s1Events[3]
-  # qIdx = s1Events[5]
-  #
+  
+  # While there are events that remain unclassified...
   while ( FALSE %in% isClassified )
   {
+    # Get the indexes of the unclassified evnets
     isUnclassified = which( !isClassified )
-    cat( "rIdx:", rIdx, "qIdx:", qIdx, '\n' )
+    
     # Find if all of the genes in the querry are present in the reference
     isInRef = hgtEventData[[ qIdx ]][[ HGT_GENES ]] %in% 
       hgtEventData[[ rIdx ]][[ HGT_GENES ]]
@@ -484,20 +475,7 @@ WriteHgtData = function( hgtEvent )
     {
       cat( "; High confidence HGT accessoy gene")
     } 
-    # else 
-    # {
-    #   for ( i in 1:nrow( hgtEvent[[ CG_DISTS ]] ) )
-    #   {
-    #     cat( "; Pr | no hgt: ")
-    #     j = which(  hgtEvent[[ ACC_GENES ]] == gene )
-    #     cat( 
-    #       row.names( hgtEvent[[ CG_DISTS ]] )[i], " : ", 
-    #       hgtEvent[[ ACC_GENE_PRS ]][ i, j ],
-    #       sep = ''
-    #       )
-    #     if ( i != nrow( hgtEvent[[ CG_DISTS ]] ) ) cat(", ")
-    #   }
-    # }
+    
     cat( "\n" )
   }
 }
@@ -598,7 +576,6 @@ GetCoreGeneDists = function( hgtEventData, refVals, qryVals, specNames )
 {
   for ( i in 1:length( hgtEventData ) )
   {
-    cat( "Event:", i, '\n')
     # Find the core genes present in this hgt event using the 
     # first genome as the representitive
     isEventCg = hgtEventData[[i]][[ HGT_GENES ]] %in% coreGeneClIdxs
