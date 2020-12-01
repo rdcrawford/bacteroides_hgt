@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1606833423115.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3140578195",
+    "id" : "87D60B85",
+    "lastKnownWriteTime" : 1606833433,
+    "last_content_update" : 1606833434054,
+    "path" : "~/gl/bacterioides_hgt/lib/R/MakeHgtHeatmap.R",
+    "project_path" : "lib/R/MakeHgtHeatmap.R",
+    "properties" : {
+        "cursorPosition" : "263,80",
+        "scrollLine" : "230"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 12,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
